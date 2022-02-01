@@ -54,13 +54,16 @@ export function constructPseudoUrlInstances(pseudoUrls) {
  * @return {Array<Request>}
  * @ignore
  */
-export function createRequests(requestOptions, pseudoUrls) {
+export function createRequests(requestOptions, pseudoUrls, excludePseudoUrls) {
+    // TODO this could be optimized, but not necessary right now
+    const excludeIt = (req) => excludePseudoUrls.some((epUrl) => epUrl.matches(req.url));
+    const urls = requestOptions.filter((req) => !excludeIt(req));
     if (!(pseudoUrls && pseudoUrls.length)) {
-        return requestOptions.map((opts) => new Request(opts));
+        return urls.map((opts) => new Request(opts));
     }
 
     const requests = [];
-    requestOptions.forEach((opts) => {
+    urls.forEach((opts) => {
         pseudoUrls
             .filter((purl) => purl.matches(opts.url))
             .forEach((purl) => {

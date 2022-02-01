@@ -103,6 +103,7 @@ export async function enqueueLinks(options) {
         selector = 'a',
         baseUrl,
         pseudoUrls,
+        excludePseudoUrls,
         transformRequestFunction,
     } = options;
 
@@ -125,20 +126,25 @@ export async function enqueueLinks(options) {
             ow.object.hasKeys('purl'),
             ow.object.validate(validators.pseudoUrl),
         ))),
+        excludePseudoUrls: ow.any(ow.null, ow.optional.array.ofType(ow.any(
+            ow.string,
+            ow.regExp,
+            ow.object.hasKeys('purl'),
+            ow.object.validate(validators.pseudoUrl),
+        ))),
         transformRequestFunction: ow.optional.function,
     }));
 
     if (baseUrl && page) log.warning('The parameter options.baseUrl can only be used when parsing a Cheerio object. It will be ignored.');
-
     // Construct pseudoUrls from input where necessary.
     const pseudoUrlInstances = constructPseudoUrlInstances(pseudoUrls || []);
-
+    const excludePseudoUrlInstances = constructPseudoUrlInstances(excludePseudoUrls || []);
     const urls = page ? await extractUrlsFromPage(page, selector) : extractUrlsFromCheerio($, selector, baseUrl);
     let requestOptions = createRequestOptions(urls);
     if (transformRequestFunction) {
         requestOptions = requestOptions.map(transformRequestFunction).filter((r) => !!r);
     }
-    let requests = createRequests(requestOptions, pseudoUrlInstances);
+    let requests = createRequests(requestOptions, pseudoUrlInstances, excludePseudoUrlInstances);
     if (limit) requests = requests.slice(0, limit);
 
     return addRequestsToQueueInBatches(requests, requestQueue);
